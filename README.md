@@ -62,9 +62,11 @@ tools:
 teukhos serve teukhos.yaml
 ```
 
-**Add to Claude Desktop:**
+**Register with your AI client:**
 ```bash
-teukhos install teukhos.yaml --client claude-desktop
+teukhos install teukhos.yaml                           # auto-detect & prompt
+teukhos install teukhos.yaml --client cursor            # specific client
+teukhos install teukhos.yaml --client claude-code --project  # project-level
 ```
 
 Ask Claude: *"Show me the last 5 commits"* — it uses the tool.
@@ -104,12 +106,14 @@ teukhos.yaml
 ## CLI Reference
 
 ```
-teukhos serve [config]          Start the MCP server
-teukhos validate [config]       Validate config, exit 0/1 — use in CI
-teukhos install [config]        Register with Claude Desktop
-teukhos wait-ready              Poll /health until ready — use in CI pipelines
-teukhos version                 Print version
-teukhos discover <binary>       (Coming v0.3) Auto-generate config from --help
+teukhos serve [config]            Start the MCP server
+teukhos validate [config]         Validate config, exit 0/1 — use in CI
+teukhos install [config]          Register with MCP client(s)
+teukhos uninstall <server-name>   Remove from MCP client(s)
+teukhos clients                   List supported clients & detection status
+teukhos wait-ready                Poll /health until ready — use in CI
+teukhos version                   Print version
+teukhos discover <binary>         (Coming soon) Auto-generate config from --help
 ```
 
 **Options for `serve`:**
@@ -118,7 +122,52 @@ teukhos discover <binary>       (Coming v0.3) Auto-generate config from --help
 --port       -p    Override HTTP port                (default: 8765)
 ```
 
+**Options for `install`:**
+```
+--client  -c    Target a specific client by slug (e.g., cursor, claude-code)
+--all           Install for all detected clients
+--project       Use project-level config (e.g., .cursor/mcp.json in cwd)
+--url           Remote server URL — enables HTTP mode
+--key           API key for HTTP mode (default: "env:TEUKHOS_API_KEY")
+```
+
+**Options for `uninstall`:**
+```
+--client  -c    Target a specific client by slug
+--all           Remove from all detected clients
+--project       Target project-level config
+```
+
 **Config file names:** Teukhos looks for `teukhos.yaml` by default. Legacy `mcp-forge.yaml` is accepted automatically with a deprecation note.
+
+---
+
+## Supported Clients
+
+Teukhos can register with these MCP-compatible AI clients:
+
+| Client | Slug | Project Scope |
+|--------|------|:------------:|
+| Claude Desktop | `claude-desktop` | — |
+| Claude Code | `claude-code` | Yes |
+| Cursor | `cursor` | Yes |
+| GitHub Copilot / VS Code | `github-copilot` | Yes |
+| Gemini CLI | `gemini-cli` | — |
+| Codex | `codex` | — |
+| Windsurf | `windsurf` | Yes |
+| Cline | `cline` | Yes |
+| Roo Code | `roo-code` | Yes |
+| Continue.dev | `continue` | Yes |
+| Kiro | `kiro` | Yes |
+| Auggie | `auggie` | — |
+| CodeBuddy | `codebuddy` | — |
+| OpenCode | `opencode` | — |
+| Trae | `trae` | Yes |
+
+```bash
+teukhos clients              # see which are detected on your system
+teukhos install --all         # register with all detected clients
+```
 
 ---
 
@@ -134,11 +183,14 @@ server:
   transport: stdio             # stdio | http
   host: "127.0.0.1"           # use 0.0.0.0 for remote (add auth!)
   port: 8765
+  cors_origins: ["*"]         # CORS origins for HTTP (default: none)
 
 auth:
   mode: none                   # none | api_key
   api_keys:
-    - "${MY_API_KEY}"
+    - "env:TEUKHOS_API_KEY"    # reads from environment variable (recommended)
+    - "env:MY_CUSTOM_KEY"      # any env var name with env: prefix
+    - "literal-key-here"       # or use a literal string directly
 
 tools:
   - name: tool_name            # snake_case — used as MCP tool ID
@@ -278,6 +330,64 @@ tools:
 
 ---
 
+## Remote Server / HTTP Transport
+
+Run Teukhos as a network-accessible server:
+
+```yaml
+# remote-server.yaml
+server:
+  transport: http
+  host: "0.0.0.0"
+  port: 8765
+
+auth:
+  mode: api_key
+  api_keys:
+    - "env:TEUKHOS_API_KEY"
+```
+
+```bash
+# Start the server
+export TEUKHOS_API_KEY="your-secret-key"
+teukhos serve remote-server.yaml
+
+# Connect a client (from any machine)
+teukhos install --client cursor --url http://server-ip:8765/mcp
+```
+
+### API Key Resolution
+
+Keys in config use the `env:` prefix convention:
+
+| Config Value | Resolved To |
+|---|---|
+| `"env:TEUKHOS_API_KEY"` | Value of `$TEUKHOS_API_KEY` environment variable |
+| `"env:MY_CUSTOM_KEY"` | Value of `$MY_CUSTOM_KEY` environment variable |
+| `"my-literal-key"` | Used as-is (not recommended for production) |
+
+### Deployment Behind a Reverse Proxy
+
+For production, run behind nginx or Caddy for TLS termination:
+
+```nginx
+# nginx example
+server {
+    listen 443 ssl;
+    server_name mcp.example.com;
+
+    ssl_certificate /etc/letsencrypt/live/mcp.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/mcp.example.com/privkey.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:8765;
+        proxy_set_header Host $host;
+    }
+}
+```
+
+---
+
 ## CI/CD Integration
 
 ### GitHub Actions
@@ -313,50 +423,68 @@ HEALTHCHECK CMD teukhos wait-ready --timeout 5
 CMD ["teukhos", "serve", "--transport", "http"]
 ```
 
-### Claude Desktop (manual)
+### Manual Client Configuration
+
+If you prefer manual setup, add to your client's MCP config:
+
+**stdio (local):**
 ```json
 {
   "mcpServers": {
-    "teukhos-git": {
+    "teukhos-my-tools": {
       "command": "teukhos",
-      "args": ["serve", "/path/to/git-tools.yaml"]
+      "args": ["serve", "/path/to/teukhos.yaml"]
     }
   }
 }
 ```
 
-Or use the install command: `teukhos install git-tools.yaml --client claude-desktop`
+**HTTP (remote):**
+```json
+{
+  "mcpServers": {
+    "teukhos-remote": {
+      "url": "http://server:8765/mcp",
+      "headers": {
+        "Authorization": "Bearer ${TEUKHOS_API_KEY}"
+      }
+    }
+  }
+}
+```
+
+Or use the install command: `teukhos install teukhos.yaml --client cursor`
 
 ---
 
 ## Roadmap
 
-### v0.2 — Current
-- YAML parser + Pydantic schema validation
-- `cli` adapter with typed arg mapping
-- Output mapping: `stdout`, `stderr`, `json_field`, `exit_code`
-- FastMCP server generation at runtime
-- `stdio` and `http` transports
-- `api_key` auth
-- `teukhos validate` for CI linting
-- `teukhos wait-ready` for CI health checks
-- `teukhos install` for Claude Desktop registration
-- Health endpoint `/health`
+### v0.3 — Current
+- Multi-client installer: 15 MCP clients supported
+- Project-level and global-level installation scope
+- `teukhos install` with auto-detect, `--client`, `--all`, `--project`, `--url`
+- `teukhos uninstall` to remove registrations
+- `teukhos clients` to list supported clients
+- HTTP Streamable transport with startup banner
+- `env:` prefix API key resolution
+- CORS configuration for HTTP transport
+- Full authentication middleware (Bearer token)
 
-### v0.3 — Production Ready
+### v0.4 — Production Ready
 - `rest` adapter (wrap any HTTP endpoint)
 - `shell` adapter (inline bash/pwsh scripts)
 - Hot reload — save YAML, tools update without restart
 - `teukhos discover <binary>` — AI-powered config generation from `--help`
-- OAuth 2.1 + JWT auth
-- Tool-level RBAC
-- Append-only audit log
 - Streaming output support
 - Lock file (`teukhos.lock`) for reproducible deployments
 
-### v0.4 — The Platform
+### v0.5 — The Platform
+- OAuth 2.1 + JWT auth
+- mTLS support for enterprise deployments
+- Tool-level RBAC
+- Append-only audit log
 - Embedded web UI — dark glass, real-time tool call visualization
-- Bidirectional YAML ↔ visual editor sync
+- Bidirectional YAML to visual editor sync
 - OpenAPI auto-import adapter
 - Tool composition / mini pipelines
 - Prometheus metrics at `/metrics`
