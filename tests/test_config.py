@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from teukhos.config import ForgeConfig, TransportType, load_config
+from teukhos.config import TransportType, load_config
 
 
 def _write_yaml(content: str) -> Path:
