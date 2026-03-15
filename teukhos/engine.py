@@ -40,11 +40,19 @@ def build_server(config: ForgeConfig) -> ServerBundle:
         handler = _build_handler(tool_config, adapter, tool_config.output)
         mcp.tool(name=tool_config.name, description=tool_config.description)(handler)
 
-    # Resolve auth keys
+    # Resolve auth keys (best-effort: missing env vars produce warnings, not crashes)
     resolved_keys: list[str] = []
     if config.auth.mode == AuthMode.api_key and config.auth.api_keys:
+        import logging
+
         from teukhos.auth import resolve_key
-        resolved_keys = [resolve_key(k) for k in config.auth.api_keys]
+
+        logger = logging.getLogger("teukhos")
+        for raw_key in config.auth.api_keys:
+            try:
+                resolved_keys.append(resolve_key(raw_key))
+            except ValueError as e:
+                logger.warning("Auth key resolution skipped: %s", e)
 
     return ServerBundle(
         mcp=mcp,
