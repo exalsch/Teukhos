@@ -171,6 +171,24 @@ teukhos install --all         # register with all detected clients
 
 ---
 
+## Running Multiple Servers
+
+You can run multiple Teukhos servers in parallel on the same machine. Each config gets a unique server name derived from its `forge.name`, so they don't overwrite each other in client configs.
+
+**stdio (no conflicts — each client spawns its own process):**
+```bash
+teukhos install git-tools.yaml --client cursor       # registers teukhos-git-tools
+teukhos install dev-tools.yaml --client cursor        # registers teukhos-dev-tools
+```
+
+**HTTP (use different ports):**
+```bash
+teukhos serve git-tools.yaml --transport http --port 8765 &
+teukhos serve dev-tools.yaml --transport http --port 8766 &
+```
+
+---
+
 ## Full Config Reference
 
 ```yaml
