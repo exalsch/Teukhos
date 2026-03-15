@@ -1,0 +1,56 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "teukhos"
+version = "0.2.0"
+description = "Spawn MCP servers from declarative YAML configuration"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [
+    { name = "Mihai Ciprian Chezan" },
+]
+keywords = ["mcp", "model-context-protocol", "yaml", "cli", "agents", "fastmcp"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Topic :: System :: Shells",
+]
+dependencies = [
+    "fastmcp>=3.0",
+    "pydantic>=2.0",
+    "typer>=0.9",
+    "pyyaml>=6.0",
+    "rich>=13.0",
+    "anyio>=4.0",
+    "httpx>=0.27",
+]
+
+[project.urls]
+Homepage = "https://github.com/MihaiCiprianChezan/teukhos"
+Repository = "https://github.com/MihaiCiprianChezan/teukhos"
+Issues = "https://github.com/MihaiCiprianChezan/teukhos/issues"
+
+[project.scripts]
+teukhos = "teukhos.cli:app"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "httpx>=0.27",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["teukhos"]
