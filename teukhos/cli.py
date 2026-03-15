@@ -278,12 +278,24 @@ def _print_banner(config: object) -> None:
     banner.add_row("[bold]Server:[/]", config.forge.name)
     banner.add_row("[bold]Transport:[/]", config.server.transport.value)
     if config.server.transport == TransportType.http:
-        banner.add_row(
-            "[bold]Endpoint:[/]",
-            f"http://{config.server.host}:{config.server.port}"
-        )
+        host = config.server.host
+        port = config.server.port
+        banner.add_row("[bold]Endpoint:[/]", f"http://{host}:{port}/mcp")
+        banner.add_row("[bold]Health:[/]", f"http://{host}:{port}/health")
     banner.add_row("[bold]Tools:[/]", ", ".join(tool_names) or "(none)")
-    banner.add_row("[bold]Auth:[/]", config.auth.mode.value)
+
+    # Auth info
+    auth_mode = config.auth.mode.value
+    if auth_mode == "api_key":
+        key_count = len(config.auth.api_keys)
+        banner.add_row("[bold]Auth:[/]", f"api_key ({key_count} key(s) configured)")
+    else:
+        banner.add_row("[bold]Auth:[/]", auth_mode)
+
+    # Connection hint for HTTP
+    if config.server.transport == TransportType.http:
+        banner.add_row("", "")
+        banner.add_row("[bold]Connect:[/]", f"teukhos install --url http://HOST:{config.server.port}/mcp")
 
     console.print(Panel(banner, title="[bold]Teukhos MCP Server[/]", border_style="cyan"))
 
