@@ -5,4 +5,4 @@ Teukhos turns declarative YAML into production-ready MCP servers.
 You describe the tool. Teukhos forges it.
 """
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
