@@ -25,6 +25,8 @@ def test_build_server_from_dev_tools():
 @pytest.mark.asyncio
 async def test_tool_execution_echo():
     """Test that a dynamically built tool actually executes correctly."""
+    import sys
+
     from teukhos.config import (
         ArgConfig,
         ArgType,
@@ -42,7 +44,10 @@ async def test_tool_execution_echo():
                 name="echo_tool",
                 description="Echo a message",
                 adapter="cli",
-                cli=CLIAdapterConfig(command="echo"),
+                cli=CLIAdapterConfig(
+                    command=sys.executable,
+                    subcommand=["-c", "import sys; print(sys.argv[1])"],
+                ),
                 args=[
                     ArgConfig(
                         name="message",

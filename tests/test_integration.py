@@ -51,6 +51,8 @@ async def test_git_branch_tool_e2e():
 @pytest.mark.asyncio
 async def test_invalid_args_error_handling():
     """Call a tool that will fail and verify error handling."""
+    import sys
+
     from teukhos.config import (
         ArgConfig,
         ArgType,
@@ -68,7 +70,10 @@ async def test_invalid_args_error_handling():
                 name="fail_tool",
                 description="A tool that will fail",
                 adapter="cli",
-                cli=CLIAdapterConfig(command="ls"),
+                cli=CLIAdapterConfig(
+                    command=sys.executable,
+                    subcommand=["-c", "import os,sys; os.listdir(sys.argv[1])"],
+                ),
                 args=[
                     ArgConfig(
                         name="path",
@@ -84,7 +89,7 @@ async def test_invalid_args_error_handling():
     bundle = build_server(config)
     tool = await bundle.mcp.get_tool("fail_tool")
     result = await tool.fn(path="/nonexistent/path/that/does/not/exist")
-    assert "Error" in result or "No such file" in result
+    assert "Error" in result or "No such file" in result or "cannot find" in result.lower()
 
 
 @pytest.mark.asyncio
@@ -114,6 +119,8 @@ async def test_dev_tools_list_processes():
 @pytest.mark.asyncio
 async def test_exit_code_mapping_e2e():
     """E2E: verify exit code mapping works."""
+    import sys
+
     from teukhos.config import (
         ArgConfig,
         ArgType,
@@ -132,9 +139,12 @@ async def test_exit_code_mapping_e2e():
                 name="check_exit",
                 description="Test exit codes",
                 adapter="cli",
-                cli=CLIAdapterConfig(command="bash", subcommand=["-c"]),
+                cli=CLIAdapterConfig(
+                    command=sys.executable,
+                    subcommand=["-c", "import sys; sys.exit(int(sys.argv[1]))"],
+                ),
                 args=[
-                    ArgConfig(name="cmd", type=ArgType.string, positional=True, required=True)
+                    ArgConfig(name="code", type=ArgType.string, positional=True, required=True)
                 ],
                 output=OutputConfig(
                     type=OutputType.exit_code,
@@ -145,9 +155,9 @@ async def test_exit_code_mapping_e2e():
     )
     bundle = build_server(config)
     tool = await bundle.mcp.get_tool("check_exit")
-    result = await tool.fn(cmd="exit 0")
+    result = await tool.fn(code="0")
     assert result == "All good"
-    result2 = await tool.fn(cmd="exit 1")
+    result2 = await tool.fn(code="1")
     assert result2 == "Something failed"
 
 

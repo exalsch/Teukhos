@@ -1,5 +1,7 @@
 """Tests for the CLI adapter."""
 
+import sys
+
 import pytest
 
 from teukhos.adapters.cli import CLIAdapter
@@ -8,7 +10,10 @@ from teukhos.config import ArgConfig, ArgType, CLIAdapterConfig
 
 @pytest.fixture
 def echo_adapter():
-    cli_config = CLIAdapterConfig(command="echo")
+    cli_config = CLIAdapterConfig(
+        command=sys.executable,
+        subcommand=["-c", "import sys; print(sys.argv[1])"],
+    )
     args = [
         ArgConfig(name="message", type=ArgType.string, required=True, positional=True),
     ]
@@ -51,10 +56,13 @@ async def test_git_log(git_log_adapter):
 
 @pytest.mark.asyncio
 async def test_timeout():
-    cli_config = CLIAdapterConfig(command="sleep", timeout_seconds=1)
-    args = [ArgConfig(name="seconds", type=ArgType.string, positional=True, required=True)]
-    adapter = CLIAdapter(cli_config, args)
-    result = await adapter.execute(seconds="10")
+    cli_config = CLIAdapterConfig(
+        command=sys.executable,
+        subcommand=["-c", "import time; time.sleep(10)"],
+        timeout_seconds=1,
+    )
+    adapter = CLIAdapter(cli_config, [])
+    result = await adapter.execute()
     assert result.exit_code == -1
     assert "timed out" in result.stderr
 
@@ -70,10 +78,13 @@ async def test_nonexistent_command():
 
 @pytest.mark.asyncio
 async def test_exit_code():
-    cli_config = CLIAdapterConfig(command="bash", subcommand=["-c"])
-    args = [ArgConfig(name="cmd", type=ArgType.string, positional=True, required=True)]
+    cli_config = CLIAdapterConfig(
+        command=sys.executable,
+        subcommand=["-c", "import sys; sys.exit(int(sys.argv[1]))"],
+    )
+    args = [ArgConfig(name="code", type=ArgType.string, positional=True, required=True)]
     adapter = CLIAdapter(cli_config, args)
-    result = await adapter.execute(cmd="exit 42")
+    result = await adapter.execute(code="42")
     assert result.exit_code == 42
 
 
@@ -90,7 +101,10 @@ async def test_boolean_flag():
 
 @pytest.mark.asyncio
 async def test_json_output():
-    cli_config = CLIAdapterConfig(command="echo")
+    cli_config = CLIAdapterConfig(
+        command=sys.executable,
+        subcommand=["-c", "import sys; print(sys.argv[1])"],
+    )
     args = [ArgConfig(name="data", type=ArgType.string, positional=True, required=True)]
     adapter = CLIAdapter(cli_config, args)
     result = await adapter.execute(data='{"name": "test", "count": 42}')

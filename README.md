@@ -731,9 +731,38 @@ You provide the MCP specification. Teukhos does the forging.
 ```bash
 git clone https://github.com/MihaiCiprianChezan/teukhos
 cd teukhos
-pip install -e ".[dev]"
-pytest
+python -m venv .venv
 ```
+
+Activate the virtual environment:
+
+```bash
+# Windows
+.venv\Scripts\activate
+
+# Linux / macOS
+source .venv/bin/activate
+```
+
+Install in dev mode and run tests:
+
+```bash
+pip install -e ".[dev]"
+
+# Run all tests (stdio + cross-transport, skips HTTP subprocess tests if no servers running)
+pytest tests/ -v
+
+# Run only stdio server tests (fast, no external dependencies)
+pytest tests/test_all_servers.py::TestStdioServers -v
+
+# Run only unit tests
+pytest tests/ -v -k "not all_servers"
+```
+
+The test suite covers:
+- **Unit tests** — config loading, CLI adapter, output mapping, auth, installers
+- **MCP protocol tests** — full JSON-RPC round-trips via FastMCP Client
+- **Integration tests** — all 11 example configs: ping, tool listing, schema validation, concurrency
 
 Pull requests welcome.
 
