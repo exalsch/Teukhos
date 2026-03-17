@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import shutil
+import subprocess
 
 import anyio
 
@@ -22,19 +23,24 @@ class CLIAdapter(BaseAdapter):
         cmd = self._build_command(**kwargs)
         env = self.cli_config.env if self.cli_config.env else None
         cwd = self.cli_config.working_dir
+        timeout = self.cli_config.timeout_seconds
 
         try:
-            with anyio.fail_after(self.cli_config.timeout_seconds):
-                result = await anyio.run_process(
+            result = await anyio.to_thread.run_sync(
+                lambda: subprocess.run(
                     cmd,
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
                     env=env,
                     cwd=cwd,
-                    check=False,
+                    timeout=timeout,
                 )
-        except TimeoutError:
+            )
+        except subprocess.TimeoutExpired:
             return AdapterResult(
                 stdout="",
-                stderr=f"Tool timed out after {self.cli_config.timeout_seconds}s",
+                stderr=f"Tool timed out after {timeout}s",
                 exit_code=-1,
             )
         except FileNotFoundError:

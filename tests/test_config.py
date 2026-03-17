@@ -30,12 +30,15 @@ tools: []
 def test_load_git_tools():
     config = load_config(Path(__file__).parent.parent / "examples" / "git-tools.yaml")
     assert config.forge.name == "git-tools"
-    assert len(config.tools) == 4
-    assert config.tools[0].name == "git_log"
-    assert config.tools[0].cli is not None
-    assert config.tools[0].cli.command == "git"
-    assert len(config.tools[0].args) == 1
-    assert config.tools[0].args[0].name == "count"
+    assert len(config.tools) == 5
+    # First tool is the ping health check
+    assert config.tools[0].name == "ping"
+    # Second tool is git_log
+    assert config.tools[1].name == "git_log"
+    assert config.tools[1].cli is not None
+    assert config.tools[1].cli.command == "git"
+    assert len(config.tools[1].args) == 1
+    assert config.tools[1].args[0].name == "count"
 
 
 def test_load_nonexistent_file():
