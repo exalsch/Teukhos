@@ -120,3 +120,6 @@ __marimo__/
 DEPLOY.md
 
 /docs/superpowers/*
+
+scripts/.http-servers.pids
+stderr.log

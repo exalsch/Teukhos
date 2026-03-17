@@ -23,8 +23,10 @@ tools:
     description: "List running processes"
     adapter: cli
     cli:
-      command: ps
-      subcommand: [aux]
+      command: python
+      subcommand:
+        - "-c"
+        - "import subprocess,platform; subprocess.run(['tasklist'] if platform.system()=='Windows' else ['ps','aux'])"
       timeout_seconds: 10
     output:
       type: stdout
@@ -33,8 +35,10 @@ tools:
     description: "Show disk usage for a path"
     adapter: cli
     cli:
-      command: du
-      subcommand: ["-sh"]
+      command: python
+      subcommand:
+        - "-c"
+        - "import shutil,sys,os; p=sys.argv[1] if len(sys.argv)>1 else '.'; p=os.path.abspath(p); u=shutil.disk_usage(p); print(f'Path: {p}'); print(f'Total: {u.total/1024/1024:.0f} MB'); print(f'Used:  {u.used/1024/1024:.0f} MB ({u.used/u.total*100:.1f}%)'); print(f'Free:  {u.free/1024/1024:.0f} MB ({u.free/u.total*100:.1f}%)')"
       timeout_seconds: 10
     args:
       - name: path
@@ -50,8 +54,10 @@ tools:
     description: "Ping a host to check connectivity"
     adapter: cli
     cli:
-      command: ping
-      subcommand: ["-c", "3"]
+      command: python
+      subcommand:
+        - "-c"
+        - "import subprocess,platform,sys; h=sys.argv[1]; flag='-n' if platform.system()=='Windows' else '-c'; r=subprocess.run(['ping',flag,'3',h],capture_output=True,text=True); print(r.stdout); exit(r.returncode)"
       timeout_seconds: 15
     args:
       - name: host
@@ -69,11 +75,13 @@ tools:
   # WARNING: This tool executes arbitrary shell commands.
   # Only use locally — NEVER expose remotely without authentication.
   - name: run_command
-    description: "Run an arbitrary shell command (local use only — do not expose remotely without auth)"
+    description: "Run an arbitrary shell command (local use only — do not expose remotely without auth). Uses system shell (cmd on Windows, sh on Linux/macOS)."
     adapter: cli
     cli:
-      command: bash
-      subcommand: ["-c"]
+      command: python
+      subcommand:
+        - "-c"
+        - "import subprocess,sys; r=subprocess.run(sys.argv[1],shell=True,capture_output=True,text=True); print(r.stdout); print(r.stderr,end='',file=__import__('sys').stderr); exit(r.returncode)"
       timeout_seconds: 30
     args:
       - name: command

@@ -88,8 +88,19 @@ tools:
     description: "Create a ZIP archive"
     adapter: cli
     cli:
-      command: zip
-      subcommand: ["-r"]
+      command: python
+      subcommand:
+        - "-c"
+        - >-
+          import zipfile,sys,os;
+          archive=sys.argv[1];source=sys.argv[2];
+          with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED) as zf:
+           if os.path.isfile(source):zf.write(source)
+           else:
+            for root,dirs,files in os.walk(source):
+             for f in files:
+              fp=os.path.join(root,f);zf.write(fp,os.path.relpath(fp,os.path.dirname(source)))
+          ;print(f'Created {archive}')
       timeout_seconds: 120
     args:
       - name: archive
@@ -109,8 +120,18 @@ tools:
     description: "List contents of a ZIP archive"
     adapter: cli
     cli:
-      command: unzip
-      subcommand: ["-l"]
+      command: python
+      subcommand:
+        - "-c"
+        - >-
+          import zipfile,sys;
+          archive=sys.argv[1];
+          with zipfile.ZipFile(archive,'r') as zf:
+           print(f'{"Size":>10}  {"Compressed":>10}  {"Name"}');
+           print('-'*50);
+           for info in zf.infolist():
+            print(f'{info.file_size:>10}  {info.compress_size:>10}  {info.filename}')
+           ;print(f'\n{len(zf.infolist())} files, {sum(i.file_size for i in zf.infolist())} bytes uncompressed')
       timeout_seconds: 15
     args:
       - name: archive
@@ -125,7 +146,10 @@ tools:
     description: "Calculate SHA-256 checksum for file integrity verification"
     adapter: cli
     cli:
-      command: sha256sum
+      command: python
+      subcommand:
+        - "-c"
+        - "import hashlib,sys; f=sys.argv[1]; h=hashlib.sha256(); [h.update(chunk) for chunk in iter(lambda:open(f,'rb').read(8192),b'')]; print(f'{h.hexdigest()}  {f}')"
       timeout_seconds: 60
     args:
       - name: file
