@@ -10,9 +10,12 @@ from teukhos.installers.base import InstallScope, JsonMcpInstaller
 class GeminiCLIInstaller(JsonMcpInstaller):
     name = "Gemini CLI"
     slug = "gemini-cli"
-    supported_scopes = [InstallScope.global_]
+    supported_scopes = [InstallScope.global_, InstallScope.project]
 
     def config_path(self, scope: InstallScope) -> Path:
         if self._config_path_override and scope in self._config_path_override:
             return self._config_path_override[scope]
+        effective = self._effective_scope(scope)
+        if effective == InstallScope.project:
+            return self.cwd / ".gemini" / "settings.json"
         return Path.home() / ".gemini" / "settings.json"

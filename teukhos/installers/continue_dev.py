@@ -13,5 +13,5 @@ class ContinueDevInstaller(JsonMcpInstaller):
             return self._config_path_override[scope]
         effective = self._effective_scope(scope)
         if effective == InstallScope.project:
-            return self.cwd / ".continue" / "config.json"
-        return Path.home() / ".continue" / "config.json"
+            return self.cwd / ".continue" / "mcpServers" / "mcp.json"
+        return Path.home() / ".continue" / "mcp.json"

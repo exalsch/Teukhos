@@ -1,5 +1,6 @@
 """Installer for Roo Code."""
 from __future__ import annotations
+import platform
 from pathlib import Path
 from teukhos.installers.base import InstallScope, JsonMcpInstaller
 
@@ -13,5 +14,17 @@ class RooCodeInstaller(JsonMcpInstaller):
             return self._config_path_override[scope]
         effective = self._effective_scope(scope)
         if effective == InstallScope.project:
-            return self.cwd / ".roo-code" / "mcp.json"
-        return Path.home() / ".roo-code" / "mcp.json"
+            return self.cwd / ".roo" / "mcp.json"
+        system = platform.system()
+        if system == "Windows":
+            return (Path.home() / "AppData" / "Roaming" / "Code" / "User"
+                    / "globalStorage" / "rooveterinaryinc.roo-cline" / "settings"
+                    / "cline_mcp_settings.json")
+        elif system == "Darwin":
+            return (Path.home() / "Library" / "Application Support" / "Code" / "User"
+                    / "globalStorage" / "rooveterinaryinc.roo-cline" / "settings"
+                    / "cline_mcp_settings.json")
+        else:
+            return (Path.home() / ".config" / "Code" / "User"
+                    / "globalStorage" / "rooveterinaryinc.roo-cline" / "settings"
+                    / "cline_mcp_settings.json")

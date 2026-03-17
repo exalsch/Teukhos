@@ -13,5 +13,5 @@ class KiroInstaller(JsonMcpInstaller):
             return self._config_path_override[scope]
         effective = self._effective_scope(scope)
         if effective == InstallScope.project:
-            return self.cwd / ".kiro" / "mcp.json"
-        return Path.home() / ".kiro" / "settings.json"
+            return self.cwd / ".kiro" / "settings" / "mcp.json"
+        return Path.home() / ".kiro" / "settings" / "mcp.json"

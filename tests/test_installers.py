@@ -227,7 +227,7 @@ from teukhos.installers.codex import CodexInstaller
 def test_gemini_cli_slug():
     installer = GeminiCLIInstaller()
     assert installer.slug == "gemini-cli"
-    assert InstallScope.project not in installer.supported_scopes
+    assert InstallScope.project in installer.supported_scopes
 
 
 def test_gemini_cli_install_stdio(tmp_path):
@@ -242,16 +242,60 @@ def test_gemini_cli_install_stdio(tmp_path):
 def test_codex_slug():
     installer = CodexInstaller()
     assert installer.slug == "codex"
-    assert InstallScope.project not in installer.supported_scopes
+    assert InstallScope.project in installer.supported_scopes
 
 
 def test_codex_install_stdio(tmp_path):
-    config_file = tmp_path / "config.json"
+    config_file = tmp_path / "config.toml"
     installer = CodexInstaller()
     installer._config_path_override = {InstallScope.global_: config_file}
     installer.install_stdio("teukhos-test", Path("/path/to/config.yaml"))
-    data = json.loads(config_file.read_text())
-    assert "teukhos-test" in data["mcpServers"]
+    text = config_file.read_text()
+    assert "[mcp_servers.teukhos-test]" in text
+    assert 'type = "stdio"' in text
+    assert 'command = ' in text
+
+
+def test_codex_install_http(tmp_path):
+    config_file = tmp_path / "config.toml"
+    installer = CodexInstaller()
+    installer._config_path_override = {InstallScope.global_: config_file}
+    installer.install_http("teukhos-test", "http://host:8765/mcp", None)
+    text = config_file.read_text()
+    assert "[mcp_servers.teukhos-test]" in text
+    assert 'type = "url"' in text
+    assert 'url = "http://host:8765/mcp"' in text
+
+
+def test_codex_install_http_with_api_key(tmp_path):
+    config_file = tmp_path / "config.toml"
+    installer = CodexInstaller()
+    installer._config_path_override = {InstallScope.global_: config_file}
+    installer.install_http("teukhos-test", "http://host:8765/mcp", "env:TEUKHOS_API_KEY")
+    text = config_file.read_text()
+    assert "[mcp_servers.teukhos-test.headers]" in text
+    assert "${TEUKHOS_API_KEY}" in text
+
+
+def test_codex_uninstall(tmp_path):
+    config_file = tmp_path / "config.toml"
+    installer = CodexInstaller()
+    installer._config_path_override = {InstallScope.global_: config_file}
+    installer.install_stdio("teukhos-test", Path("/path/to/config.yaml"))
+    installer.install_stdio("other-server", Path("/path/to/other.yaml"))
+    installer.uninstall("teukhos-test")
+    text = config_file.read_text()
+    assert "[mcp_servers.teukhos-test]" not in text
+    assert "[mcp_servers.other-server]" in text
+
+
+def test_codex_project_scope(tmp_path):
+    config_file = tmp_path / ".codex" / "config.toml"
+    installer = CodexInstaller(cwd=tmp_path)
+    installer._config_path_override = {InstallScope.project: config_file}
+    installer.install_stdio("teukhos-test", Path("/path/to/config.yaml"), scope=InstallScope.project)
+    text = config_file.read_text()
+    assert "[mcp_servers.teukhos-test]" in text
 
 
 # --- Tier 2 installers ---
@@ -302,7 +346,7 @@ def test_continue_dev_slug():
 
 
 def test_continue_dev_install_stdio(tmp_path):
-    config_file = tmp_path / "config.json"
+    config_file = tmp_path / "mcp.json"
     installer = ContinueDevInstaller()
     installer._config_path_override = {InstallScope.global_: config_file}
     installer.install_stdio("teukhos-test", Path("/path/to/config.yaml"))
@@ -333,12 +377,12 @@ from teukhos.installers.auggie import AuggieInstaller
 
 def test_auggie_slug():
     installer = AuggieInstaller()
-    assert installer.slug == "auggie"
-    assert installer.name == "Auggie"
+    assert installer.slug == "augment"
+    assert installer.name == "Augment Code"
 
 
 def test_auggie_install_stdio(tmp_path):
-    config_file = tmp_path / "mcp.json"
+    config_file = tmp_path / "settings.json"
     installer = AuggieInstaller()
     installer._config_path_override = {InstallScope.global_: config_file}
     installer.install_stdio("teukhos-test", Path("/path/to/config.yaml"))
@@ -356,10 +400,20 @@ def test_codebuddy_slug():
 
 
 def test_codebuddy_install_stdio(tmp_path):
-    config_file = tmp_path / "mcp.json"
+    config_file = tmp_path / ".mcp.json"
     installer = CodeBuddyInstaller()
     installer._config_path_override = {InstallScope.global_: config_file}
     installer.install_stdio("teukhos-test", Path("/path/to/config.yaml"))
+    data = json.loads(config_file.read_text())
+    assert "teukhos-test" in data["mcpServers"]
+    assert data["mcpServers"]["teukhos-test"]["type"] == "stdio"
+
+
+def test_codebuddy_project_scope(tmp_path):
+    config_file = tmp_path / ".mcp.json"
+    installer = CodeBuddyInstaller(cwd=tmp_path)
+    installer._config_path_override = {InstallScope.project: config_file}
+    installer.install_stdio("teukhos-test", Path("/path/to/config.yaml"), scope=InstallScope.project)
     data = json.loads(config_file.read_text())
     assert "teukhos-test" in data["mcpServers"]
 
@@ -374,10 +428,19 @@ def test_opencode_slug():
 
 
 def test_opencode_install_stdio(tmp_path):
-    config_file = tmp_path / "config.json"
+    config_file = tmp_path / "opencode.json"
     installer = OpenCodeInstaller()
     installer._config_path_override = {InstallScope.global_: config_file}
     installer.install_stdio("teukhos-test", Path("/path/to/config.yaml"))
+    data = json.loads(config_file.read_text())
+    assert "teukhos-test" in data["mcpServers"]
+
+
+def test_opencode_project_scope(tmp_path):
+    config_file = tmp_path / "opencode.json"
+    installer = OpenCodeInstaller(cwd=tmp_path)
+    installer._config_path_override = {InstallScope.project: config_file}
+    installer.install_stdio("teukhos-test", Path("/path/to/config.yaml"), scope=InstallScope.project)
     data = json.loads(config_file.read_text())
     assert "teukhos-test" in data["mcpServers"]
 

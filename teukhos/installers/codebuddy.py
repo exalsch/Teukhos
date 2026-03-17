@@ -6,9 +6,13 @@ from teukhos.installers.base import InstallScope, JsonMcpInstaller
 class CodeBuddyInstaller(JsonMcpInstaller):
     name = "CodeBuddy"
     slug = "codebuddy"
-    supported_scopes = [InstallScope.global_]
+    supported_scopes = [InstallScope.global_, InstallScope.project]
+    stdio_needs_type_field = True
 
     def config_path(self, scope: InstallScope) -> Path:
         if self._config_path_override and scope in self._config_path_override:
             return self._config_path_override[scope]
-        return Path.home() / ".codebuddy" / "mcp.json"
+        effective = self._effective_scope(scope)
+        if effective == InstallScope.project:
+            return self.cwd / ".mcp.json"
+        return Path.home() / ".codebuddy" / ".mcp.json"
