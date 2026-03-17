@@ -154,8 +154,18 @@ class TestHTTPServers:
             )
             processes.append((name, port, proc))
 
-        # Wait for servers to be ready
-        time.sleep(3)
+        # Wait for ALL servers to be ready — CI runners can be slow
+        import httpx as _httpx
+        deadline = time.time() + 30
+        pending_ports = {port for _, port, _ in processes}
+        while pending_ports and time.time() < deadline:
+            time.sleep(0.5)
+            for port in list(pending_ports):
+                try:
+                    _httpx.get(f"http://127.0.0.1:{port}/mcp", timeout=2)
+                    pending_ports.discard(port)
+                except Exception:
+                    pass
 
         yield processes
 
