@@ -1,6 +1,6 @@
 # Teukhos
 
-![Teukhos](./docs/images/tt.webp)
+![Teukhos](https://raw.githubusercontent.com/MihaiCiprianChezan/Teukhos/main/docs/images/tt.webp)
 
 > *You describe the tool. Teukhos forges it as MCP.*
 
@@ -74,7 +74,7 @@ Ask Claude: *"Show me the last 5 commits"* — it uses the tool.
 ## How It Works
 
 <p align="center">
-  <img src="docs/images/how-it-works.svg" alt="How Teukhos Works" width="600"/>
+  <img src="https://raw.githubusercontent.com/MihaiCiprianChezan/Teukhos/main/docs/images/how-it-works.svg" alt="How Teukhos Works" width="600"/>
 </p>
 
 ---

@@ -5,6 +5,47 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.3.2] — 2026-03-17
+
+### Fixed
+- `__version__` now reads from `pyproject.toml` via `importlib.metadata` — single source of truth
+- GitHub Copilot global config path corrected to `%APPDATA%/Code/User/mcp.json` on Windows
+
+---
+
+## [0.3.0] — 2026-03-16
+
+### Added
+- **Multi-client installer system** — plugin/strategy pattern with 15 supported MCP clients:
+  Claude Desktop, Claude Code, Cursor, GitHub Copilot, Gemini CLI, Codex,
+  Windsurf, Cline, Roo Code, Continue.dev, Kiro, Auggie, CodeBuddy, OpenCode, Trae
+- **`teukhos install`** rewritten — auto-detect clients, `--client`, `--all`, `--project`,
+  `--url` (HTTP), `--key` (API key), `--dest` (arbitrary JSON path), `--config-key`
+- **`teukhos uninstall`** — remove server registrations from client configs
+- **`teukhos clients`** — list all supported clients with detection status and config paths
+- **`--dest` custom path install** — write MCP config to any JSON file, bypassing client detection
+- **`--config-key`** option — choose `mcpServers` (default) or `servers` (GitHub Copilot format)
+- **`env:` prefix API key resolution** — `"env:TEUKHOS_API_KEY"` reads from environment,
+  plain strings used as literals. Default: `env:TEUKHOS_API_KEY`
+- **`resolve_key()`** utility in `teukhos/auth.py` for env-var-or-literal key resolution
+- **`AuthMiddleware`** — Bearer token validation middleware for HTTP transport
+- **`ServerBundle`** dataclass — `build_server()` now returns bundle with resolved auth keys and CORS config
+- **`cors_origins`** config option for HTTP transport CORS headers
+- **Improved HTTP startup banner** — shows endpoint, health URL, auth status, and connect hint
+- **Project-level install scope** — `--project` writes to `.cursor/mcp.json`, `.claude/settings.json`, etc.
+  in current directory. Silently falls back to global for clients that don't support project scope
+- **Atomic JSON writes** with backup (`.teukhos-backup`) for safe config file modifications
+- Example config: `examples/remote-server.yaml`
+- Architecture diagram: `docs/images/how-it-works.svg`
+- Full README rewrite with recipes, deployment guide, and supported clients table
+
+### Changed
+- `build_server()` returns `ServerBundle` instead of raw `FastMCP` instance
+- `install` command no longer hardcoded to Claude Desktop — uses installer plugin system
+- Version bumped to 0.3.0 to mark multi-client and HTTP transport milestone
+
+---
+
 ## [0.2.0] — 2026-03-15
 
 ### Changed

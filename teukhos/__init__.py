@@ -5,4 +5,6 @@ Teukhos turns declarative YAML into production-ready MCP servers.
 You describe the tool. Teukhos forges it.
 """
 
-__version__ = "0.3.1"
+from importlib.metadata import version
+
+__version__ = version("teukhos")
