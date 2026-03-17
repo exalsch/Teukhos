@@ -1,9 +1,9 @@
 # Teukhos
 
 [![CI](https://github.com/MihaiCiprianChezan/Teukhos/actions/workflows/ci.yml/badge.svg)](https://github.com/MihaiCiprianChezan/Teukhos/actions)
-[![PyPI](https://img.shields.io/pypi/v/teukhos)](https://pypi.org/project/teukhos/)
-[![Python](https://img.shields.io/pypi/pyversions/teukhos)](https://pypi.org/project/teukhos/)
-[![License](https://img.shields.io/pypi/l/teukhos)](LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/teukhos?cacheSeconds=3600)](https://pypi.org/project/teukhos/)
+[![Python](https://img.shields.io/pypi/pyversions/teukhos?cacheSeconds=3600)](https://pypi.org/project/teukhos/)
+[![License](https://img.shields.io/pypi/l/teukhos?cacheSeconds=3600)](LICENSE)
 
 ---
 
