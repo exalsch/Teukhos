@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import keyword
 import re
 import subprocess
 import traceback
@@ -12,6 +13,9 @@ import yaml
 from rich.console import Console
 
 console = Console(stderr=True)
+
+# Python reserved keywords and builtins that can't be used as parameter names
+_PYTHON_RESERVED = set(keyword.kwlist) | {"True", "False", "None"}
 
 
 @dataclass
@@ -161,8 +165,10 @@ def parse_options(help_text: str) -> list[DiscoveredArg]:
         if long_flag in skip_flags or short_flag in skip_flags:
             continue
 
-        # Derive a clean snake_case name from the flag
+        # Derive a clean snake_case name from the flag, avoiding Python reserved keywords
         name = long_flag.lstrip("-").replace("-", "_")
+        if name in _PYTHON_RESERVED:
+            name = f"{name}_value"
         if name in seen_names:
             continue
         seen_names.add(name)
