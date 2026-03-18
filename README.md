@@ -127,10 +127,11 @@ teukhos discover <binary>         Auto-generate config from --help
 
 **Options for `discover`:**
 ```
---output    -o    Output file path (default: <binary-name>.yaml)
---dry-run         Print generated YAML to stdout instead of writing a file
---max-depth -d    Max recursion depth for subcommands (default: 2)
---filter    -f    Only discover subcommands under this prefix (e.g. "vm" for "az vm")
+--output     -o    Output file path (default: <binary-name>.yaml)
+--dry-run          Print generated YAML to stdout instead of writing a file
+--max-depth  -d    Max recursion depth for subcommands (default: 2)
+--timeout    -t    Timeout in seconds for discovery commands
+--filter     -f    Only discover subcommands under this prefix (e.g. "vm" for "az vm")
 ```
 
 **Config file names:** Teukhos looks for `teukhos.yaml` by default. Legacy `mcp-forge.yaml` is accepted automatically with a deprecation note.
@@ -664,7 +665,7 @@ teukhos uninstall teukhos-git-tools --all
 ### Discover Tools from a Binary
 
 ```bash
-# Auto-generate a teukhos.yaml from any CLI binary
+# Auto-generate a <binary-name>.yaml (e.g., my-tool.yaml) from any CLI binary
 teukhos discover my-tool.exe
 
 # Preview without writing a file
@@ -732,7 +733,7 @@ teukhos install --client cursor --url http://localhost:8765/mcp
 - Cross-platform example configs (Windows, Linux, macOS)
 - Ping health check tool on all example servers
 - Comprehensive integration test suite (62 tests across 20 servers)
-- `teukhos discover <binary>` — auto-generate config from `--help` with `--max-depth` and `--filter` options
+- `teukhos discover <binary>` — auto-generate config from `--help` with `--max-depth`, `--filter`, and `--timeout` options
 
 ### v0.4 — Production Ready
 - `rest` adapter (wrap any HTTP endpoint)

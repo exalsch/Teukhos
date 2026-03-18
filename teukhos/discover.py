@@ -5,7 +5,6 @@ from __future__ import annotations
 import keyword
 import re
 import subprocess
-import traceback
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -14,7 +13,7 @@ from rich.console import Console
 
 console = Console(stderr=True)
 
-# Python reserved keywords and builtins that can't be used as parameter names
+# Python reserved keywords that can't be used as parameter names
 _PYTHON_RESERVED = set(keyword.kwlist) | {"True", "False", "None"}
 
 
@@ -63,7 +62,21 @@ def run_help(binary: str, args: list[str] | None = None) -> str | None:
 
 
 def parse_commands(help_text: str) -> list[tuple[str, str]]:
-    """Extract command names and descriptions from a Commands: section."""
+    """Extract command names and descriptions from a Commands: section.
+
+    Examples:
+        Basic \"Commands:\" section:
+
+        >>> sample = '''
+        ... Usage: tool [OPTIONS] COMMAND [ARGS]...
+        ...
+        ... Commands:
+        ...   init        Initialize the repository
+        ...   status      Show the current status
+        ... '''
+        >>> parse_commands(sample)
+        [('init', 'Initialize the repository'), ('status', 'Show the current status')]
+    """
     commands: list[tuple[str, str]] = []
     in_commands = False
     for line in help_text.splitlines():
@@ -109,7 +122,25 @@ def parse_commands(help_text: str) -> list[tuple[str, str]]:
 
 
 def parse_options(help_text: str) -> list[DiscoveredArg]:
-    """Extract options/arguments from help text."""
+    """Extract options/arguments from help text.
+
+    The parser is intentionally conservative and targets common CLI help formats.
+
+    Examples:
+        Simple GNU-style options section:
+
+        >>> help_text = '''
+        ... Options:
+        ...   -f, --force           Force the operation
+        ...   --count <INT>         Number of items
+        ...   -v, --verbose         Enable verbose output
+        ... '''
+        >>> opts = parse_options(help_text)
+        >>> [o.flag for o in opts]
+        ['--force', '--count', '--verbose']
+        >>> [o.short_flag for o in opts]
+        ['-f', None, '-v']
+    """
     args: list[DiscoveredArg] = []
     seen_names: set[str] = set()
 
@@ -263,13 +294,50 @@ def discover_binary(
     if not top_help:
         raise RuntimeError(f"Could not get --help output from: {binary_path}")
 
-    # Extract description (first non-empty line after "Description:" or "Group")
+    # Extract a human-friendly description from the top-level --help output.
+    # Prefer the body under a "Description:" section when present; otherwise,
+    # use the first non-empty line that isn't a common header like "Usage:".
     description = ""
-    for line in top_help.splitlines():
+    lines = top_help.splitlines()
+
+    # 1) Look for an explicit "Description:" section and take the text under it.
+    for i, line in enumerate(lines):
         stripped = line.strip()
-        if stripped.lower().startswith(("description:", "group")):
-            continue
-        if stripped and not description:
+        if stripped.lower().startswith("description:"):
+            desc_lines: list[str] = []
+            for follow in lines[i + 1 :]:
+                follow_stripped = follow.strip()
+                if not follow_stripped:
+                    # Stop at a blank line; most CLIs separate sections this way.
+                    break
+                lower = follow_stripped.lower()
+                # Stop if we hit another obvious section header.
+                if lower.startswith(("usage", "options", "commands", "subcommands", "arguments")):
+                    break
+                desc_lines.append(follow_stripped)
+            description = " ".join(desc_lines).strip()
+            break
+
+    # 2) Fallback: first non-empty line that isn't a common header.
+    if not description:
+        skip_prefixes = (
+            "usage",
+            "options",
+            "available commands",
+            "commands",
+            "subcommands",
+            "arguments",
+            "positional arguments",
+            "group",
+        )
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                continue
+            lower = stripped.lower()
+            # Skip generic section headers (with or without trailing colon).
+            if any(lower.startswith(p + ":") or lower.startswith(p) for p in skip_prefixes):
+                continue
             description = stripped
             break
 
@@ -361,7 +429,7 @@ def generate_yaml(result: DiscoveryResult, timeout: int | None = None) -> str:
             "cli": {
                 "command": result.binary,
                 "subcommand": tool.subcommands,
-                **({"timeout_seconds": timeout} if timeout else {}),
+                **({"timeout_seconds": timeout} if timeout is not None else {}),
             },
         }
 

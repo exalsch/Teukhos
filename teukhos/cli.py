@@ -544,7 +544,7 @@ def clients() -> None:
 def discover(
     binary: Annotated[str, typer.Argument(help="Path or name of binary to discover tools from")],
     output: Annotated[
-        Optional[str], typer.Option("--output", "-o", help="Output file path (default: <name>.yaml)")
+        Optional[str], typer.Option("--output", "-o", help="Output file path (default: {result.binary_name}.yaml)")
     ] = None,
     dry_run: Annotated[
         bool, typer.Option("--dry-run", help="Print generated YAML to stdout instead of writing a file")
@@ -585,7 +585,13 @@ def discover(
         console.print(Syntax(yaml_content, "yaml", theme="monokai"))
     else:
         out_path = Path(output) if output else Path(f"{result.binary_name}.yaml")
-        out_path.write_text(yaml_content, encoding="utf-8")
+        try:
+            # Ensure parent directory exists (handles e.g. custom --output paths)
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            out_path.write_text(yaml_content, encoding="utf-8")
+        except OSError as e:
+            console.print(f"[bold red]Error writing output file:[/] {out_path} — {e}")
+            raise typer.Exit(1)
         console.print(f"\n[bold green]Generated![/] {out_path.resolve()}")
 
     console.print(f"[dim]{len(result.tools)} tool(s) discovered.[/]")
