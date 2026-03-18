@@ -343,7 +343,7 @@ def discover_binary(
     return result
 
 
-def generate_yaml(result: DiscoveryResult) -> str:
+def generate_yaml(result: DiscoveryResult, timeout: int | None = None) -> str:
     """Generate a teukhos.yaml config from discovery results."""
     config: dict = {
         "forge": {
@@ -361,6 +361,7 @@ def generate_yaml(result: DiscoveryResult) -> str:
             "cli": {
                 "command": result.binary,
                 "subcommand": tool.subcommands,
+                **({"timeout_seconds": timeout} if timeout else {}),
             },
         }
 

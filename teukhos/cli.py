@@ -555,6 +555,9 @@ def discover(
     filter_prefix: Annotated[
         Optional[str], typer.Option("--filter", "-f", help="Only discover subcommands under this prefix (e.g. 'vm' for 'az vm')")
     ] = None,
+    timeout: Annotated[
+        Optional[int], typer.Option("--timeout", "-t", help="Timeout in seconds for each tool execution (default: 30)")
+    ] = None,
 ) -> None:
     """Auto-generate a teukhos.yaml from a binary's --help output."""
     import traceback
@@ -574,7 +577,7 @@ def discover(
         console.print("[yellow]No tools discovered.[/]")
         raise typer.Exit(1)
 
-    yaml_content = generate_yaml(result)
+    yaml_content = generate_yaml(result, timeout=timeout)
 
     if dry_run:
         from rich.syntax import Syntax
